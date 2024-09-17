@@ -5,11 +5,12 @@ import imageio
 
 class Tree:
 
-    def __init__(self, q_init:np.array, K:int, delta:int, D):
+    def __init__(self, q_init:np.array, K:int, delta:int, D, obstacles:list):
         self.q_init = q_init
         self.K = K
         self.delta = delta
         self.D = D
+        self.obstacles = obstacles
         self.nodes = [q_init]
         self.nodes_x = [q_init[0]]
         self.nodes_y = [q_init[1]]
@@ -35,9 +36,23 @@ class Tree:
         dif = q_rand - q_near
         unit_vec = dif/np.linalg.norm(dif)
         q_new = q_near + unit_vec*delta
+        for obs in self.obstacles:
+            u = np.dot(obs.center - q_near, q_new - q_near)/(np.linalg.norm(q_new - q_near)**2)
+            if (u >= 0 and u <= 1):
+                p = q_near + u*(q_new - q_near)
+                if np.linalg.norm(p - obs.center) < obs.radius:
+                    return np.array([None, None])
+            elif u > 1:
+                if np.linalg.norm(q_new - obs.center) < obs.radius:
+                    return np.array([None, None])
         self.nodes.append(q_new)
         self.nodes_x.append(q_new[0])
         self.nodes_y.append(q_new[1])
         self.edges.append([(q_near[0], q_near[1]), (q_new[0], q_new[1])])
         return q_new
 
+    def add_node(self, node):
+        self.edges.append([(self.nodes_x[-1], self.nodes_y[-1]), (node[0], node[1])])
+        self.nodes.append(node)
+        self.nodes_x.append(node[0])
+        self.nodes_y.append(node[1])
